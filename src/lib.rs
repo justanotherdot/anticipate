@@ -4,34 +4,49 @@ use std::process;
 pub trait Anticipate {
     type Item;
 
-    /// If a value is present in `self`, return it.
-    /// Otherwise, exit(1) and spit out `msg`.
+    /// Anticipate an value and return it if present. Otherwise, non-zero exit and spit out `msg`
+    /// along with the unanticipated error.
     fn anticipate(self, msg: &str) -> Self::Item;
-
-    /// If a value is present in `self`, return it.
-    /// Otherwise, exit(1) and spit out `msg` along
-    /// with an error if it's present.
-    fn anticipate_err(self, msg: &str) -> Self::Item;
 }
 
-impl<A, E: Display> Anticipate for Result<A, E> {
+pub trait AnticipateErr {
+    type ErrItem;
+
+    /// Anticipate an error and return it if present. Otherwise, non-zero exit and spit out `msg`
+    /// along with the unanticipated error.
+    fn anticipate_err(self, msg: &str) -> Self::ErrItem;
+}
+
+impl<A, E> Anticipate for Result<A, E>
+where
+    A: Display,
+    E: Display,
+{
     type Item = A;
 
     fn anticipate(self, msg: &str) -> Self::Item {
         match self {
             Ok(val) => val,
-            Err(_err) => {
-                eprintln!("{}", msg);
+            Err(err) => {
+                eprintln!("{}: {}", msg, err);
                 process::exit(1);
             }
         }
     }
+}
 
-    fn anticipate_err(self, msg: &str) -> Self::Item {
+impl<A, E> AnticipateErr for Result<A, E>
+where
+    A: Display,
+    E: Display,
+{
+    type ErrItem = E;
+
+    fn anticipate_err(self, msg: &str) -> Self::ErrItem {
         match self {
-            Ok(val) => val,
-            Err(err) => {
-                eprintln!("{}: {}", msg, err);
+            Err(err) => err,
+            Ok(val) => {
+                eprintln!("{}: {}", msg, val);
                 process::exit(1);
             }
         }
@@ -49,10 +64,6 @@ impl<A> Anticipate for Option<A> {
                 process::exit(1);
             }
         }
-    }
-
-    fn anticipate_err(self, msg: &str) -> Self::Item {
-        self.anticipate(msg)
     }
 }
 
