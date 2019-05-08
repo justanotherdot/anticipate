@@ -19,7 +19,6 @@ pub trait AnticipateErr {
 
 impl<A, E> Anticipate for Result<A, E>
 where
-    A: Display,
     E: Display,
 {
     type Item = A;
@@ -38,7 +37,6 @@ where
 impl<A, E> AnticipateErr for Result<A, E>
 where
     A: Display,
-    E: Display,
 {
     type ErrItem = E;
 
