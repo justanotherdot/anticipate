@@ -7,10 +7,14 @@ pub trait Anticipate {
     /// Anticipate an value and return it if present. Otherwise, non-zero exit and spit out `msg`
     /// along with the unanticipated error.
     fn anticipate(self, msg: &str) -> Self::Item;
+}
 
-    // /// Anticipate an error and return it if present. Otherwise, non-zero exit and spit out `msg`
-    // /// along with the unanticipated error.
-    // fn anticipate_err(self, msg: &str) -> Self::Item;
+pub trait AnticipateErr {
+    type ErrItem;
+
+    /// Anticipate an error and return it if present. Otherwise, non-zero exit and spit out `msg`
+    /// along with the unanticipated error.
+    fn anticipate_err(self, msg: &str) -> Self::ErrItem;
 }
 
 impl<A, E> Anticipate for Result<A, E>
@@ -29,16 +33,24 @@ where
             }
         }
     }
+}
 
-    //fn anticipate_err(self, msg: &str) -> Self::Item {
-    //    match self {
-    //        Err(err) => err,
-    //        Ok(val) => {
-    //            eprintln!("{}: {}", msg, val);
-    //            process::exit(1);
-    //        }
-    //    }
-    //}
+impl<A, E> AnticipateErr for Result<A, E>
+where
+    A: Display,
+    E: Display,
+{
+    type ErrItem = E;
+
+    fn anticipate_err(self, msg: &str) -> Self::ErrItem {
+        match self {
+            Err(err) => err,
+            Ok(val) => {
+                eprintln!("{}: {}", msg, val);
+                process::exit(1);
+            }
+        }
+    }
 }
 
 impl<A> Anticipate for Option<A> {
@@ -53,10 +65,6 @@ impl<A> Anticipate for Option<A> {
             }
         }
     }
-
-    //fn anticipate_err(self, msg: &str) -> Self::Item {
-    //    self.anticipate(msg)
-    //}
 }
 
 #[cfg(test)]
